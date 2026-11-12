@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f8">
+  <title>DL Rush · 下载流量调度</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#overview"><span class="brand-mark">↓</span><span>DL Rush<small>下载流量调度</small></span></a>
+    <nav aria-label="主导航">
+      <a class="nav-link selected" href="#overview"><span aria-hidden="true">◫</span>运行概览</a>
+      <a class="nav-link" href="#settings"><span aria-hidden="true">⚙</span>任务设置</a>
+      <a class="nav-link" href="#activity"><span aria-hidden="true">≡</span>运行记录</a>
+    </nav>
+    <div class="sidebar-note"><span class="tiny-dot"></span> Docker 服务<small>任务在容器内运行<br>关闭网页也会继续</small></div>
+  </aside>
+  <main id="overview">
+    <header class="page-header">
+      <div><div class="eyebrow">DL RUSH / CONTROL PANEL</div><h1>下载流量，按计划运行。</h1><p>真实接收，随即丢弃。让下载任务轻装运行。</p></div>
+      <div class="header-actions"><span id="connection" class="connection">正在连接服务</span><button type="button" id="toggle-run" class="button primary" disabled>启动任务 <span aria-hidden="true">↗</span></button></div>
+    </header>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <section class="stats-grid" aria-label="流量统计">
+      <article class="stat"><span class="stat-label">当前下载速率 <span aria-hidden="true">↓</span></span><div><strong id="speed">0.00</strong><span class="unit">Mbps</span></div><small>最近 3 秒平均速率</small></article>
+      <article class="stat"><span class="stat-label">今日下载流量 <span aria-hidden="true">◷</span></span><div><strong id="daily">0</strong><span class="unit" id="daily-unit">MiB</span></div><small id="quota-caption">每日 00:00 重置 · 北京时间</small></article>
+      <article class="stat"><span class="stat-label">累计下载流量 <span aria-hidden="true">↙</span></span><div><strong id="total">0</strong><span class="unit" id="total-unit">MiB</span></div><small>保存在数据卷中，重启后保留</small></article>
+      <article class="stat state-stat"><span class="stat-label">任务状态 <span aria-hidden="true">◉</span></span><div><strong id="state-label">已停止</strong></div><small id="state-detail">配置下载源后即可启动</small></article>
+    </section>
+    <section class="card chart-card" aria-label="实时流量曲线">
+      <div class="card-heading"><div><h2>流量走势</h2><p>近 60 秒 · 应用接收的数据量</p></div><span class="chart-legend"><span class="tiny-dot"></span> 下载速率</span></div>
+      <div class="chart-wrap"><canvas id="chart" role="img" aria-label="近 60 秒下载速率曲线"></canvas><div class="chart-empty" id="chart-empty">等待任务开始<small>启动后，下载流量将在这里显示</small></div></div>
+      <div class="chart-footer"><span>60 秒前</span><span>30 秒前</span><span>现在</span></div>
+    </section>
+    <section id="settings" class="settings-section">
+      <div class="section-heading"><div><h2>任务设置</h2><p>一个任务，一条下载连接。多个地址将依次轮换。</p></div><span class="subtle-tag">北京时间 UTC+8</span></div>
+      <form id="settings-form">
+        <div class="settings-grid">
+          <section class="card source-card">
+            <div class="number-heading"><span>01</span><h3>下载源</h3></div>
+            <label for="urls">HTTP / HTTPS 地址</label>
+            <textarea id="urls" name="urls" rows="5" spellcheck="false" placeholder="https://你的服务器/数据流接口&#10;每行一个地址，最多 20 个"></textarea>
+            <p class="field-help">使用自己的数据流接口，或允许使用的测速地址。收到的数据直接丢弃，不会生成下载文件。</p>
+            <div class="info-box"><span aria-hidden="true">i</span><p>流量由飞牛上的容器产生。网页只负责控制与查看统计。</p></div>
+          </section>
+          <section class="card">
+            <div class="number-heading"><span>02</span><h3>运行方式</h3></div>
+            <fieldset class="mode-options"><legend class="sr-only">运行模式</legend>
+              <label class="mode-option"><input type="radio" name="mode" value="continuous" checked><span><strong>持续运行</strong><small>在允许运行的时间内持续接收</small></span></label>
+              <label class="mode-option"><input type="radio" name="mode" value="intermittent"><span><strong>间歇运行</strong><small>按“运行 → 暂停”循环</small></span></label>
+            </fieldset>
+            <div class="two-fields" id="cycle-fields"><div><label for="run-seconds">每次运行 <span>秒</span></label><input id="run-seconds" name="run_seconds" type="number" min="1" max="86400" step="1" value="60" required></div><div><label for="pause-seconds">间隔暂停 <span>秒</span></label><input id="pause-seconds" name="pause_seconds" type="number" min="1" max="86400" step="1" value="60" required></div></div>
+          </section>
+          <section class="card">
+            <div class="number-heading"><span>03</span><h3>每日定时</h3></div>
+            <label class="switch-row" for="schedule-enabled"><span><strong>限定每天的运行时段</strong><small>关闭后，全天允许运行</small></span><input class="switch" id="schedule-enabled" name="schedule_enabled" type="checkbox"></label>
+            <div class="two-fields schedule-fields"><div><label for="schedule-start">开始时间</label><input id="schedule-start" name="schedule_start" type="time" value="01:00" required></div><div><label for="schedule-end">结束时间</label><input id="schedule-end" name="schedule_end" type="time" value="07:00" required></div></div>
+            <p class="field-help">支持跨午夜，例如 23:00 至 07:00。起止时间相同表示全天。容器重启后会恢复已启用的任务。</p>
+          </section>
+          <section class="card">
+            <div class="number-heading"><span>04</span><h3>速率与流量</h3></div>
+            <div class="two-fields"><div><label for="rate-mbps">下载限速 <span>Mbps</span></label><input id="rate-mbps" name="rate_mbps" type="number" min="0" max="10000" step="0.1" value="20" required><small class="input-help">0 表示不限速</small></div><div><label for="daily-limit">每日流量上限 <span>GiB</span></label><input id="daily-limit" name="daily_limit_gib" type="number" min="0" max="10240" step="0.001" value="0" required><small class="input-help">0 表示不设上限</small></div></div>
+            <p class="field-help">达到每日上限后暂停，次日自动恢复。统计为应用接收的响应体字节，不含协议开销及套接字缓冲。</p>
+          </section>
+        </div>
+        <div class="save-bar"><span id="dirty-note">设置已同步</span><button class="button dark" id="save-settings" type="submit">保存设置 <span aria-hidden="true">✓</span></button></div>
+      </form>
+    </section>
+    <section id="activity" class="card activity-card">
+      <div class="card-heading"><div><h2>运行记录</h2><p>最近 60 条事件 · 仅保存在内存中</p></div><span class="subtle-tag">自动刷新</span></div>
+      <ul id="event-list" class="event-list"><li>正在读取记录…</li></ul>
+    </section>
+    <footer><span>DL Rush · 下载数据不落盘</span><span>设置变更时保存 · 统计约每 15 秒保存</span></footer>
+  </main>
+</body>
+</html>

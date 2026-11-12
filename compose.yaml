@@ -1,0 +1,28 @@
+services:
+  dl-rush:
+    build: .
+    image: dl-rush:local
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8787}:8787"
+    environment:
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?请先在 .env 中设置 ADMIN_PASSWORD}"
+    volumes:
+      - dl-rush-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "2m"
+        max-file: "2"
+
+volumes:
+  dl-rush-data:
